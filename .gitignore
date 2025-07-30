@@ -1,2 +1,182 @@
-tracks_features.csv
 config.txt
+tracks_features.csv
+
+# ===============================================
+# GITIGNORE POUR PROJET SPOTIFY R
+# ===============================================
+
+# FICHIERS DE CONFIGURATION SENSIBLES
+# ===================================
+config.R                    # Vos identifiants Spotify (CRITIQUE!)
+.env                        # Variables d'environnement
+.Renviron                   # Configuration R environnement
+
+# FICHIERS DE DONNÉES VOLUMINEUX
+# ==============================
+tracks_features.csv         # Dataset principal (329 MB)
+*.csv                       # Tous les fichiers CSV générés
+data/                       # Dossier de données
+datasets/                   # Dossier de datasets
+raw_data/                   # Données brutes
+
+# RÉSULTATS D'ANALYSE
+# ===================
+spotify_analysis_results.csv
+test_results*.csv           # Fichiers de test avec timestamp
+analysis_*.csv              # Résultats d'analyses
+output/                     # Dossier de sortie
+results/                    # Dossier de résultats
+
+# FICHIERS TEMPORAIRES R
+# ======================
+.RData                      # Workspace R
+.Rhistory                   # Historique des commandes
+.Rapp.history              # Historique R.app (Mac)
+.Ruserdata                 # Données utilisateur R
+
+# SESSION ET CACHE
+# ================
+.httr-oauth                # Cache OAuth httr
+.secrets                   # Fichiers secrets
+*.rds                      # Objets R sauvegardés
+*.RData                    # Workspaces R
+*.rda                      # Archives R
+
+# FICHIERS DE LOGS
+# ================
+*.log                      # Fichiers de logs
+debug.txt                  # Fichiers de debug
+error.txt                  # Logs d'erreurs
+
+# FICHIERS SYSTÈME (OS)
+# =====================
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+.AppleDouble
+.LSOverride
+
+# Linux
+*~
+.directory
+.fuse_hidden*
+
+# ENVIRONNEMENTS DE DÉVELOPPEMENT
+# ===============================
+# RStudio
+.Rproj.user/
+*.Rproj
+
+# VSCode
+.vscode/
+*.code-workspace
+
+# IntelliJ / PyCharm
+.idea/
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# PACKAGES ET DÉPENDANCES
+# =======================
+packrat/lib*/              # Packrat library
+renv/library/              # renv library
+renv/local/                # renv local
+renv/cellar/               # renv cellar
+
+# BUILD ET COMPILATION
+# ===================
+*.tar.gz                   # Archives R
+*.tgz                      # Archives compressées
+*.zip                      # Archives zip
+src/*.o                    # Objets compilés
+src/*.so                   # Bibliothèques partagées
+src/*.dll                  # DLL Windows
+
+# DOCUMENTATION GÉNÉRÉE
+# =====================
+man/*.Rd                   # Documentation R générée
+doc/                       # Documentation générée
+inst/doc/                  # Documentation installée
+
+# TESTS ET BENCHMARKS
+# ===================
+tests/testthat/test-*.R    # Tests générés
+benchmark_results/         # Résultats de benchmarks
+performance_*.txt          # Fichiers de performance
+
+# FICHIERS PERSONNELS
+# ===================
+notes.txt                  # Notes personnelles
+todo.txt                   # Liste de tâches
+scratch.R                  # Fichier de brouillon
+experimental/              # Code expérimental
+sandbox/                   # Code de test
+
+# FICHIERS DE SAUVEGARDE
+# ======================
+*.bak                      # Fichiers de sauvegarde
+*.backup                   # Sauvegardes
+*~                         # Fichiers temporaires
+
+# RAPPORTS ET OUTPUTS
+# ===================
+*.html                     # Rapports HTML générés
+*.pdf                      # Rapports PDF
+plots/                     # Graphiques générés
+figures/                   # Figures générées
+
+# LARGE FILES (au cas où)
+# =======================
+*.h5                       # Fichiers HDF5
+*.hdf5                     # Fichiers HDF5
+*.mat                      # Fichiers MATLAB
+*.parquet                  # Fichiers Parquet
+
+# CACHE DIVERS
+# ============
+cache/                     # Cache général
+tmp/                       # Fichiers temporaires
+temp/                      # Fichiers temporaires
+
+# ===============================================
+# AIDE-MÉMOIRE GITIGNORE
+# ===============================================
+# Pour ajouter un fichier déjà suivi :
+#   git rm --cached filename
+#   git commit -m "Remove tracked file"
+#
+# Pour ignorer un dossier entier :
+#   dossier/
+#
+# Pour ignorer tous les fichiers d'un type :
+#   *.extension
+#
+# Pour autoriser une exception :
+#   !fichier_à_garder.csv
+# ===============================================
