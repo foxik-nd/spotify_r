@@ -3,25 +3,24 @@
 # Conversion du notebook Python vers R
 # ===============================================
 
-# Chargement des librairies nécessaires
 library(httr)
 library(jsonlite)
 library(base64enc)
 library(dplyr)
 library(httpuv)
 
-# Charger la configuration
-source("config.R")
+this_dir <- dirname(normalizePath(sys.frame(1)$ofile))
+source(file.path(this_dir, "config.R"))
+
 
 # ===============================================
 # CONFIGURATION SPOTIFY
 # ===============================================
 
-REDIRECT_URI <- "http://localhost:8000/callback"
+REDIRECT_URI <- "http://127.0.0.1:8000/callback"
 AUTH_BASE_URL <- "https://accounts.spotify.com"
 API_BASE_URL <- "https://api.spotify.com/v1"
 
-# Variable globale pour stocker le token
 access_token <- NULL
 
 # ===============================================
@@ -35,7 +34,6 @@ SpotifyAuthClient <- list(
   auth_base_url = AUTH_BASE_URL,
   api_base_url = API_BASE_URL,
   
-  # Méthode get_auth_url
   get_auth_url = function(scope = NULL) {
     params <- list(
       client_id = CLIENT_ID,
@@ -51,7 +49,6 @@ SpotifyAuthClient <- list(
     return(paste0(AUTH_BASE_URL, "/authorize?", query_string))
   },
   
-  # Méthode get_token
   get_token = function(code) {
     auth_string <- paste0(CLIENT_ID, ":", CLIENT_SECRET)
     auth_header <- paste0("Basic ", base64encode(charToRaw(auth_string)))
@@ -83,58 +80,58 @@ SpotifyAuthClient <- list(
 # ===============================================
 
 run_oauth_server <- function(scope = "user-read-private user-read-email user-top-read") {
-  # Générer l'URL d'authentification
   auth_url <- SpotifyAuthClient$get_auth_url(scope)
   cat("Ouvrez cette URL dans votre navigateur :\n", auth_url, "\n")
+  browseURL(auth_url)
   
-  # Démarrer le serveur local pour recevoir le callback
-  server <- startServer("127.0.0.1", 8000, list(
+  access_code <- NULL
+  
+
+  app <- list(
     call = function(req) {
       if (grepl("/callback", req$PATH_INFO)) {
-        # Extraire le code de la query string
         query <- req$QUERY_STRING
         code_match <- regmatches(query, regexpr("code=([^&]*)", query))
         if (length(code_match) > 0) {
-          code <- gsub("code=", "", code_match)
+          access_code <<- gsub("code=", "", code_match)
           
-          # Échanger le code contre un token
+
           tryCatch({
-            token_info <- SpotifyAuthClient$get_token(code)
+            token_info <- SpotifyAuthClient$get_token(access_code)
             access_token <<- token_info$access_token
-            cat("Token d'accès obtenu avec succès!\n")
-            cat("Token:", access_token, "\n")
+            cat("oken d'accès obtenu avec succès !\n")
           }, error = function(e) {
-            cat("Erreur lors de l'obtention du token:", e$message, "\n")
+            cat("❌ Erreur token :", e$message, "\n")
           })
         }
         
-        # Réponse HTML simple
-        list(
+        return(list(
           status = 200L,
-          headers = list('Content-Type' = 'text/html'),
-          body = "<h1>Authentification réussie!</h1><p>Vous pouvez fermer cette fenêtre.</p>"
-        )
+          headers = list("Content-Type" = "text/html"),
+          body = "<h2>Authentification réussie. Vous pouvez fermer cette page.</h2>"
+        ))
       } else {
-        list(status = 404L, body = "Page non trouvée")
+        return(list(status = 404L, body = "Page non trouvée"))
       }
     }
-  ))
+  )
   
-  cat("Serveur en attente du callback...\n")
-  cat("Appuyez sur Ctrl+C pour arrêter le serveur une fois authentifié.\n")
+
+  cat("En attente du callback OAuth...\n")
+  server <- httpuv::startServer("127.0.0.1", 8000, app)
   
-  # Attendre l'authentification
-  service()
+  while (is.null(access_token)) {
+    httpuv::service()
+    Sys.sleep(0.1)
+  }
   
-  # Arrêter le serveur
-  stopServer(server)
+  httpuv::stopServer(server)
 }
 
 # ===============================================
 # FONCTIONS POUR RÉCUPÉRER LES DONNÉES SPOTIFY
 # ===============================================
 
-# Fonction pour récupérer les top tracks
 get_top_tracks <- function(limit = 50, time_range = "long_term") {
   if (is.null(access_token)) {
     stop("Erreur : Aucun token d'accès disponible. Authentifiez-vous d'abord")
@@ -165,7 +162,6 @@ get_top_tracks <- function(limit = 50, time_range = "long_term") {
   }
 }
 
-# Fonction pour obtenir les genres d'un artiste
 get_genres_for_artist <- function(artist_id) {
   if (is.null(access_token)) {
     cat("Erreur : Aucun token d'accès disponible. Authentifiez-vous d'abord\n")
@@ -192,7 +188,6 @@ get_genres_for_artist <- function(artist_id) {
 # FONCTIONS DE TRAITEMENT DES DONNÉES
 # ===============================================
 
-# Convertir les top tracks en DataFrame
 tracks_to_dataframe <- function(top_tracks) {
   tracks_data <- data.frame(
     name = character(0),
@@ -221,7 +216,6 @@ tracks_to_dataframe <- function(top_tracks) {
   return(tracks_data)
 }
 
-# Ajouter les genres au DataFrame
 add_genres_to_dataframe <- function(df) {
   if (!"artist_ids" %in% names(df)) {
     cat("La colonne 'artist_ids' est manquante\n")
@@ -231,12 +225,10 @@ add_genres_to_dataframe <- function(df) {
   df$genres <- character(nrow(df))
   
   for (i in 1:nrow(df)) {
-    # Parser les IDs d'artistes (format: "['id1', 'id2']")
     artist_ids_str <- df$artist_ids[i]
     artist_ids_str <- gsub("\\[|\\]|'", "", artist_ids_str)
     artist_ids <- trimws(strsplit(artist_ids_str, ",")[[1]])
     
-    # Récupérer les genres pour chaque artiste
     track_genres <- character(0)
     for (artist_id in artist_ids) {
       if (nchar(artist_id) > 0) {
@@ -245,7 +237,6 @@ add_genres_to_dataframe <- function(df) {
       }
     }
     
-    # Supprimer les doublons et joindre
     track_genres <- unique(track_genres)
     df$genres[i] <- paste(track_genres, collapse = ", ")
   }
@@ -260,7 +251,6 @@ add_genres_to_dataframe <- function(df) {
 main_analysis <- function() {
   cat("=== ANALYSE SPOTIFY EN R ===\n\n")
   
-  # 1. Authentification
   cat("1. Démarrage de l'authentification OAuth...\n")
   run_oauth_server()
   
@@ -268,21 +258,17 @@ main_analysis <- function() {
     stop("Échec de l'authentification. Arrêt du script.")
   }
   
-  # 2. Récupération des top tracks
   cat("\n2. Récupération de vos top tracks...\n")
   top_tracks <- get_top_tracks()
   
-  # 3. Conversion en DataFrame
   cat("\n3. Conversion des données en DataFrame...\n")
   df_tracks <- tracks_to_dataframe(top_tracks)
   print(head(df_tracks))
   
-  # 4. Lecture du fichier tracks_features.csv (si disponible)
   cat("\n4. Lecture du fichier tracks_features.csv...\n")
   if (file.exists("tracks_features.csv")) {
     tracks_features <- read.csv("tracks_features.csv", stringsAsFactors = FALSE)
     
-    # Renommer la colonne id en id_track
     if ("id" %in% names(tracks_features)) {
       names(tracks_features)[names(tracks_features) == "id"] <- "id_track"
     }
@@ -290,19 +276,16 @@ main_analysis <- function() {
     cat("Aperçu du fichier tracks_features:\n")
     print(head(tracks_features, 5))
     
-    # 5. Fusion des données
     cat("\n5. Fusion des DataFrames...\n")
     df_tracks_all <- merge(df_tracks, tracks_features, by = "id_track", all.x = TRUE)
     cat("Données fusionnées - Dimensions:", dim(df_tracks_all), "\n")
     
-    # 6. Sélection des colonnes pour l'analyse
     audio_features <- c('popularity', 'danceability', 'energy', 'key', 'loudness',
                        'mode', 'speechiness', 'acousticness', 'instrumentalness', 
                        'liveness', 'valence', 'tempo')
     
     df_tracks_clean <- df_tracks_all[, intersect(names(df_tracks_all), audio_features), drop = FALSE]
     
-    # 7. Ajout des genres (si artist_ids disponible)
     if ("artist_ids" %in% names(df_tracks_all)) {
       cat("\n6. Ajout des genres musicaux...\n")
       df_tracks_all <- add_genres_to_dataframe(df_tracks_all)
@@ -312,7 +295,6 @@ main_analysis <- function() {
     cat("\n7. Résultats finaux:\n")
     print(head(df_tracks_clean))
     
-    # Sauvegarder les résultats
     write.csv(df_tracks_clean, "spotify_analysis_results.csv", row.names = FALSE)
     cat("\nRésultats sauvegardés dans 'spotify_analysis_results.csv'\n")
     
@@ -328,7 +310,6 @@ main_analysis <- function() {
 # FONCTIONS UTILITAIRES
 # ===============================================
 
-# Fonction pour afficher des statistiques sur les données
 show_stats <- function(df) {
   cat("\n=== STATISTIQUES DES DONNÉES ===\n")
   cat("Dimensions:", dim(df), "\n")
